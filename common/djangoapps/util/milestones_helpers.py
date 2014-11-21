@@ -12,6 +12,7 @@ from milestones.api import (
     add_course_milestone,
     remove_course_milestone,
     get_course_milestones_fulfillment_paths,
+    add_user_milestone,
 )
 from django.conf import settings
 
@@ -134,3 +135,12 @@ def get_prerequisite_course_display(course_descriptor):
         pre_requisite_course_key = CourseKey.from_string(course_descriptor.pre_requisite_course)
         pre_requisite_course_display = ' '.join([pre_requisite_course_key.org, pre_requisite_course_key.course])
     return pre_requisite_course_display
+
+
+def collect_course_milestone(course_key, user):
+    """
+    It would save course milestone collected by user
+    """
+    course_milestones = get_course_milestones(course_key=course_key, relationship="fulfills")
+    for milestone in course_milestones:
+        add_user_milestone({'id': user.id}, milestone)
