@@ -100,7 +100,7 @@
         display: block;
         font-weight: normal;
         color: $gray;
-        margin-top: 15px;
+        margin-top: ($baseline*0.75);
     }
 
 
@@ -109,13 +109,13 @@
         padding-top: 25px;
 
         form {
-            @include clearfix;
+            @include clearfix();
             clear: both;
         }
     }
 
     .login-form {
-        margin-bottom: 20px;
+        margin-bottom: $baseline;
     }
 
     %bold-label {
@@ -134,11 +134,11 @@
 
     .action-label {
         @extend %bold-label;
-        margin-bottom: 20px;
+        margin-bottom: $baseline;
     }
 
     .form-field {
-        @include clearfix;
+        @include clearfix();
         clear: both;
         position: relative;
         width: 100%;
@@ -190,7 +190,7 @@
             display: block;
             width: 100%;
             margin: 0;
-            padding: ($baseline/2) ($baseline*.75);
+            padding: ($baseline/2) ($baseline*0.75);
 
             &.long {
                 width: 100%;
@@ -203,7 +203,7 @@
             &.checkbox {
                 display: inline;
                 width: auto;
-                margin-right: 5px;
+                margin-right: ($baseline/4);
             }
 
             &.error {
@@ -251,7 +251,7 @@
     .login-provider {
         @extend %btn-secondary-blue-outline;
         width: 100%;
-        margin-bottom: 20px;
+        margin-bottom: $baseline;
         text-shadow: none;
         text-transform: none;
 
@@ -261,7 +261,7 @@
         }
 
         &:last-child {
-            margin-bottom: 20px;
+            margin-bottom: $baseline;
         }
 
         &.button-Google:hover,
@@ -371,14 +371,14 @@
         }
 
         .form-toggle {
-            margin-right: 5px;
+            margin-right: ($baseline/4);
         }
 
         .form-field {
             &.select-gender {
                 @extend %inline-form-field-tablet;
                 width: calc( 50% - 10px );
-                margin-right: 20px;
+                margin-right: $baseline;
             }
 
             &.select-year_of_birth {
@@ -412,20 +412,20 @@
         }
 
         .form-toggle {
-            margin-right: 10px;
+            margin-right: ($baseline/2);
         }
 
         .form-field {
             &.select-level_of_education {
                 @extend %inline-form-field-desktop;
                 width: 300px;
-                margin-right: 20px;
+                margin-right: $baseline;
             }
 
             &.select-gender {
                 @extend %inline-form-field-desktop;
                 width: 60px;
-                margin-right: 20px;
+                margin-right: $baseline;
             }
 
             &.select-year_of_birth {
