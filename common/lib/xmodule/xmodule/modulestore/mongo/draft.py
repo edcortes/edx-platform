@@ -555,10 +555,15 @@ class DraftModuleStore(MongoModuleStore):
             next_tier = []
             for child_loc in current_entry.get('definition', {}).get('children', []):
                 child_loc = course_key.make_usage_key_from_deprecated_string(child_loc)
-                for rev_func in as_functions:
-                    current_loc = rev_func(child_loc)
-                    current_son = current_loc.to_deprecated_son()
-                    next_tier.append(current_son)
+                parents = self._get_raw_parent_locations(child_loc, ModuleStoreEnum.RevisionOption.all)
+                # Don't delete modules if one of its parents shouldn't be deleted
+                # This should only be an issue for courses have ended up in
+                # a state where modules have multiple parents
+                if all(parent in to_be_deleted for parent in parents):
+                    for rev_func in as_functions:
+                        current_loc = rev_func(child_loc)
+                        current_son = current_loc.to_deprecated_son()
+                        next_tier.append(current_son)
 
             return next_tier
 
