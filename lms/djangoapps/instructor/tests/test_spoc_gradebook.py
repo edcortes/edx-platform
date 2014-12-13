@@ -102,7 +102,7 @@ class TestDefaultGradingPolicy(TestGradebook):
 
         # All other grades are None [29 categories * 11 users - 27 non-empty grades = 292]
         # One use at the top of the page [1]
-        self.assertEquals(293, self.response.content.count('grade_None'))
+        self.assertEquals(304, self.response.content.count('grade_None'))
 
 
 class TestLetterCutoffPolicy(TestGradebook):
