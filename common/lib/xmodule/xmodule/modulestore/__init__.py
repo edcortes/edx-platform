@@ -1090,7 +1090,14 @@ class ModuleStoreWriteBase(ModuleStoreReadBase, ModuleStoreWrite):
             fields (dict): A dictionary specifying initial values for some or all fields
                 in the newly created block
         """
-        item = self.create_item(user_id, parent_usage_key.course_key, block_type, block_id=block_id, fields=fields, **kwargs)
+        item = self.create_item(
+            user_id,
+            parent_usage_key.course_key,
+            block_type,
+            block_id=block_id,
+            fields=fields,
+            **kwargs
+        )
         parent = self.get_item(parent_usage_key)
         parent.children.append(item.location)
         self.update_item(parent, user_id)

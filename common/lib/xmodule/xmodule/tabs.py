@@ -723,9 +723,13 @@ class CourseTabList(List):
         __init__ method.  This is because the default values are dependent on other information from
         within the course.
         """
-
+        # Courseware tab is first position...
         course.tabs.extend([
             CoursewareTab(),
+        ])
+
+        # Course Info tab in second position...
+        course.tabs.extend([
             CourseInfoTab(),
         ])
 
@@ -792,7 +796,7 @@ class CourseTabList(List):
             settings,
             is_user_authenticated=True,
             is_user_staff=True,
-            is_user_enrolled=False
+            is_user_enrolled=False,
     ):
         """
         Generator method for iterating through all tabs that can be displayed for the given course and
@@ -807,6 +811,8 @@ class CourseTabList(List):
                         yield item
                 else:
                     yield tab
+
+        # Always return the instructor tab
         instructor_tab = InstructorTab()
         if instructor_tab.can_display(course, settings, is_user_authenticated, is_user_staff, is_user_enrolled):
             yield instructor_tab
