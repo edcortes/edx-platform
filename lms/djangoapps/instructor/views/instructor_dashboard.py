@@ -72,10 +72,9 @@ def instructor_dashboard_2(request, course_id):
     ]
 
     #check if there is corresponding entry in the CourseMode Table related to the Instructor Dashboard course
-    course_honor_mode = CourseMode.mode_for_course(course_key, 'honor')
-    course_mode_has_price = False
-    if course_honor_mode and course_honor_mode.min_price > 0:
-        course_mode_has_price = True
+    course_mode_has_price = CourseMode.has_payment_options(course_key)
+    honor_mode = CourseMode.mode_for_course(course_key, 'honor')
+    is_white_label = honor_mode and honor_mode.min_price > 0
 
     if (settings.FEATURES.get('INDIVIDUAL_DUE_DATES') and access['instructor']):
         sections.insert(3, _section_extensions(course))
@@ -89,8 +88,8 @@ def instructor_dashboard_2(request, course_id):
         sections.append(_section_metrics(course, access))
 
     # Gate access to Ecommerce tab
-    if course_mode_has_price:
-        sections.append(_section_e_commerce(course, access))
+    if course_mode_has_price and (access['finance_admin'] or is_white_label):
+        sections.append(_section_e_commerce(course, access, is_white_label))
 
     disable_buttons = not _is_small_course(course_key)
 
@@ -126,15 +125,16 @@ def instructor_dashboard_2(request, course_id):
 ## section_display_name will be used to generate link titles in the nav bar.
 
 
-def _section_e_commerce(course, access):
+def _section_e_commerce(course, access, is_white_label):
     """ Provide data for the corresponding dashboard section """
     course_key = course.id
     coupons = Coupon.objects.filter(course_id=course_key).order_by('-is_active')
-    course_price = None
+
+    course_price = 0
+    for mode in CourseMode.modes_for_course(course_key):
+        course_price = mode.min_price if mode.min_price > course_price else course_price
+
     total_amount = None
-    course_honor_mode = CourseMode.mode_for_course(course_key, 'honor')
-    if course_honor_mode and course_honor_mode.min_price > 0:
-        course_price = course_honor_mode.min_price
     if access['finance_admin']:
         total_amount = PaidCourseRegistration.get_total_amount_of_purchased_item(course_key)
 
@@ -160,6 +160,7 @@ def _section_e_commerce(course, access):
         'set_course_mode_url': reverse('set_course_mode_price', kwargs={'course_id': unicode(course_key)}),
         'download_coupon_codes_url': reverse('get_coupon_codes', kwargs={'course_id': unicode(course_key)}),
         'coupons': coupons,
+        'enable_coupons': is_white_label,
         'course_price': course_price,
         'total_amount': total_amount
     }
