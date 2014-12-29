@@ -15,6 +15,7 @@ from mock import Mock, patch
 
 from edxval.api import create_profile, create_video, get_video_info
 
+from contentstore.models import VideoEncodingDownloadConfig
 from contentstore.views.videos import KEY_EXPIRATION_IN_SECONDS, VIDEO_ASSET_TYPE
 from contentstore.tests.utils import CourseTestCase
 from contentstore.utils import reverse_course_url
@@ -309,8 +310,19 @@ class VideoUrlsCsvTestCase(VideoUploadTestMixin, CourseTestCase):
 
     VIEW_NAME = "video_encodings_download"
 
-    def test_get_csv(self):
-        response = self.client.get(self.url, HTTP_ACCEPT="text/csv")
+    def setUp(self):
+        super(VideoUrlsCsvTestCase, self).setUp()
+        VideoEncodingDownloadConfig(
+            profile_whitelist="profile1",
+            status_whitelist="file_delivered,file_complete"
+        ).save()
+
+    def _check_csv_response(self, expected_video_ids, expected_profiles):
+        """
+        Check that the response is a valid CSV response containing rows
+        corresponding to expected_video_ids.
+        """
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response["Content-Disposition"],
@@ -320,27 +332,27 @@ class VideoUrlsCsvTestCase(VideoUploadTestMixin, CourseTestCase):
         reader = csv.DictReader(response_reader, dialect=csv.excel)
         self.assertEqual(
             reader.fieldnames,
-            ["Name", "Duration", "Date Added", "Video ID", "profile1 URL", "profile2 URL"]
+            (
+                ["Name", "Duration", "Date Added", "Video ID"] +
+                ["{} URL".format(profile) for profile in expected_profiles]
+            )
         )
-        count = 0
+        actual_video_ids = []
         for row in reader:
-            count += 1
             response_video = {
                 key.decode("utf-8"): value.decode("utf-8") for key, value in row.items()
             }
+            actual_video_ids.append(response_video["Video ID"])
             original_video = self._get_previous_upload(response_video["Video ID"])
             self.assertEqual(response_video["Name"], original_video["client_video_id"])
             self.assertEqual(response_video["Video ID"], original_video["edx_video_id"])
-            for profile in self.profiles:
-                profile_name = profile["profile_name"]
-                response_profile_url = response_video[
-                    "{profile_name} URL".format(profile_name=profile_name)
-                ]
+            for profile in expected_profiles:
+                response_profile_url = response_video["{} URL".format(profile)]
                 original_encoded_for_profile = next(
                     (
                         original_encoded
                         for original_encoded in original_video["encoded_videos"]
-                        if original_encoded["profile"] == profile["profile_name"]
+                        if original_encoded["profile"] == profile
                     ),
                     None
                 )
@@ -348,7 +360,17 @@ class VideoUrlsCsvTestCase(VideoUploadTestMixin, CourseTestCase):
                     self.assertEqual(response_profile_url, original_encoded_for_profile["url"])
                 else:
                     self.assertEqual(response_profile_url, "")
-        self.assertEqual(count, len(self.previous_uploads))
+        self.assertEqual(set(actual_video_ids), set(expected_video_ids))
+
+    def test_basic(self):
+        self._check_csv_response(["test2", "non-ascii"], ["profile1"])
+
+    def test_config(self):
+        VideoEncodingDownloadConfig(
+            profile_whitelist="profile1,profile2",
+            status_whitelist="file_delivered,file_complete,transcode_active"
+        ).save()
+        self._check_csv_response(["test1", "test2", "non-ascii"], ["profile1", "profile2"])
 
     def test_non_ascii_course(self):
         course = CourseFactory.create(

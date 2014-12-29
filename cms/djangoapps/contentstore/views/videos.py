@@ -15,6 +15,7 @@ import rfc6266
 from edxval.api import create_video, get_videos_for_ids
 from opaque_keys.edx.keys import CourseKey
 
+from contentstore.models import VideoEncodingDownloadConfig
 from contentstore.utils import reverse_course_url
 from edxmako.shortcuts import render_to_response
 from util.json_request import expect_json, JsonResponse
@@ -87,15 +88,15 @@ def video_encodings_download(request, course_key_string):
         # (e.g. desktop, mobile high quality, mobile low quality)
         return _("{profile_name} URL").format(profile_name=profile)
 
+    profile_whitelist = VideoEncodingDownloadConfig.get_profile_whitelist()
+    status_whitelist = VideoEncodingDownloadConfig.get_status_whitelist()
+
     videos = list(_get_videos(course))
     name_col = _("Name")
     duration_col = _("Duration")
     added_col = _("Date Added")
     video_id_col = _("Video ID")
-    profile_cols = {
-        get_profile_header(encoded_video["profile"])
-        for video in videos for encoded_video in video["encoded_videos"]
-    }
+    profile_cols = [get_profile_header(profile) for profile in profile_whitelist]
 
     def make_csv_dict(video):
         """
@@ -118,6 +119,7 @@ def video_encodings_download(request, course_key_string):
             [
                 (get_profile_header(encoded_video["profile"]), encoded_video["url"])
                 for encoded_video in video["encoded_videos"]
+                if encoded_video["profile"] in profile_whitelist
             ]
         )
         return {
@@ -136,12 +138,13 @@ def video_encodings_download(request, course_key_string):
     )
     writer = csv.DictWriter(
         response,
-        [name_col, duration_col, added_col, video_id_col] + list(profile_cols),
+        [name_col, duration_col, added_col, video_id_col] + profile_cols,
         dialect=csv.excel
     )
     writer.writeheader()
     for video in videos:
-        writer.writerow(make_csv_dict(video))
+        if video["status"] in status_whitelist:
+            writer.writerow(make_csv_dict(video))
     return response
 
 
