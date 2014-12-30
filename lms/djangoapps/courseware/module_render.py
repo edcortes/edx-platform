@@ -380,17 +380,6 @@ def get_module_system_for_user(user, field_data_cache,
             user_location=user_location,
             request_token=request_token,
         )
-    def _fulfill_course_content_milestones(course_key, content_key, user_id):
-        if settings.FEATURES.get('MILESTONES_APP', False):
-            content_milestones = milestones_api.get_course_content_milestones(
-                course_key,
-                content_key,
-                relationship='fulfills'
-            )
-            # Add each milestone to the user's set...
-            user = {'id': user_id}
-            for milestone in content_milestones:
-                milestones_api.add_user_milestone(user, milestone)
 
     def _fulfill_content_milestones(course_key, content_key, user_id):
         """

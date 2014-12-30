@@ -2,8 +2,6 @@ import json
 import logging
 import warnings
 
-from django.conf import settings
-
 from lxml import etree
 
 from xblock.fields import Integer, Scope, Boolean

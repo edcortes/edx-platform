@@ -51,14 +51,18 @@ def entrance_exam(request, course_key_string):
         response_format = request.REQUEST.get('format', 'html')
         http_accept = request.META.get('http_accept')
         if response_format == 'json' or 'application/json' in http_accept:
-            # First clean out any old entrance exams
-            _delete_entrance_exam(request, course_key)
-            return _create_entrance_exam(request, course_key)
+            ee_min_score = request.POST.get('entrance_exam_minimum_score_pct', '50')
+
+            # if request contains empty value then save the default one.
+            entrance_exam_minimum_score_pct = 50.0
+            if ee_min_score != '':
+                entrance_exam_minimum_score_pct = float(ee_min_score)
+            return create_entrance_exam(request, course_key, entrance_exam_minimum_score_pct)
         return HttpResponse(status=400)
 
     # Remove the entrance exam module for the specified course (returns 204 regardless of existence)
     elif request.method == 'DELETE':
-        return _delete_entrance_exam(request, course_key)
+        return delete_entrance_exam(request, course_key)
 
     # No other HTTP verbs/methods are supported at this time
     else:
@@ -76,7 +80,16 @@ def entrance_exam_create_helper(request, course_key_string):
     return _create_entrance_exam(request, course_key)
 
 
-def _create_entrance_exam(request, course_key):
+def create_entrance_exam(request, course_key, entrance_exam_minimum_score_pct):
+    """
+    api method to create an entrance exam.
+    First clean out any old entrance exams.
+    """
+    _delete_entrance_exam(request, course_key)
+    return _create_entrance_exam(request=request, course_key=course_key, entrance_exam_minimum_score_pct=entrance_exam_minimum_score_pct)
+
+
+def _create_entrance_exam(request, course_key, entrance_exam_minimum_score_pct=50.0):
     """
     Internal workflow operation to create an entrance exam
     """
@@ -100,11 +113,10 @@ def _create_entrance_exam(request, course_key):
 
     # Set the entrance exam metadata flags for this course
     # Reload the course so we don't overwrite the new child reference
-    entrance_exam_minimum_score_pct = request.POST.get('entrance_exam_minimum_score_pct', 1) / 100
     course = modulestore().get_course(course_key)
     metadata = {
         'entrance_exam_enabled': True,
-        'entrance_exam_minimum_score_pct': entrance_exam_minimum_score_pct,
+        'entrance_exam_minimum_score_pct': entrance_exam_minimum_score_pct / 100,
         'entrance_exam_id': created_item['locator'],
     }
     CourseMetadata.update_from_dict(metadata, course, request.user)
@@ -154,6 +166,13 @@ def _get_entrance_exam(request, course_key):  # pylint: disable=W0613
             status=200, mimetype='application/json')
     except ItemNotFoundError:
         return HttpResponse(status=404)
+
+
+def delete_entrance_exam(request, course_key):
+    """
+    api method to delete an entrance exam
+    """
+    return _delete_entrance_exam(request=request, course_key=course_key)
 
 
 def _delete_entrance_exam(request, course_key):
