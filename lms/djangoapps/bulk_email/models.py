@@ -11,12 +11,12 @@ file and check it in at the same time as your model changes. To do that,
 3. Add the migration file created in edx-platform/lms/djangoapps/bulk_email/migrations/
 
 """
+from bs4 import BeautifulSoup
 import logging
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models, transaction
 
-from html_to_text import html_to_text
 from mail_utils import wrap_message
 
 from xmodule_django.models import CourseKeyField
@@ -88,7 +88,7 @@ class CourseEmail(Email):
         """
         # automatically generate the stripped version of the text from the HTML markup:
         if text_message is None:
-            text_message = html_to_text(html_message)
+            text_message = BeautifulSoup(html_message).get_text()
 
         # perform some validation here:
         if to_option not in TO_OPTIONS:
