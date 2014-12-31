@@ -291,5 +291,3 @@ class TestECommerceDashboardViews(ModuleStoreTestCase):
         self.assertTrue(self.e_commerce_link in response.content)
         # Coupons should show up for White Label sites with priced honor modes.
         self.assertFalse('Coupons List' in response.content)
-
-
