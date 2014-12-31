@@ -316,11 +316,8 @@
 
           .icon {
             @include margin-right(0);
+            @include transform(none);
             vertical-align: middle;
-            -webkit-transform: none;
-            -moz-transform: none;
-            -o-transform: none;
-            transform: none;
           }
         }
       }
@@ -416,12 +413,9 @@
         .action-edit.action-inline {
 
           .icon {
+            @include transform(none);
             margin-right: 0;
             vertical-align: middle;
-            -webkit-transform: none;
-            -moz-transform: none;
-            -o-transform: none;
-            transform: none;
           }
         }
       }
