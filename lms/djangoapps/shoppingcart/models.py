@@ -812,6 +812,7 @@ class RegistrationCodeRedemption(models.Model):
         """
         code_redemption = RegistrationCodeRedemption(registration_code=course_reg_code, redeemed_by=user)
         code_redemption.save()
+        return code_redemption
 
 
 class SoftDeleteCouponManager(models.Manager):

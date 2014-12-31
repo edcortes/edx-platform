@@ -317,7 +317,6 @@ def get_reg_code_validity(registration_code, request, limiter):
 
 @require_http_methods(["GET", "POST"])
 @login_required
-@enforce_shopping_cart_enabled
 def register_code_redemption(request, registration_code):
     """
     This view allows the student to redeem the registration code
@@ -358,7 +357,7 @@ def register_code_redemption(request, registration_code):
             if course_registration.mode_slug is not None:
                 kwargs['mode'] = course_registration.mode_slug
                 
-            redemption.course_enrollment = CourseEnrollment.enroll(request.user, course.id)
+            redemption.course_enrollment = CourseEnrollment.enroll(request.user, course.id, **kwargs)
             redemption.save()
 
             context = {
