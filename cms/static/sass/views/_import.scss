@@ -133,7 +133,7 @@
         float: left;
         width: flex-grid(1,9);
 
-        *.icon {
+        .icon {
           @include transition(opacity $tmg-f1 ease-in-out 0);
           @extend %t-icon4;
           position: absolute;
@@ -235,7 +235,7 @@
             opacity: 0.0;
           }
 
-          *.icon {
+          .icon {
             color: $green;
           }
 
@@ -261,7 +261,7 @@
             opacity: 1.0;
           }
 
-          *.icon {
+          .icon {
             color: $red;
           }
 
