@@ -4,6 +4,7 @@ Instructor Dashboard Views
 
 import logging
 import datetime
+from opaque_keys.edx.keys import CourseKey
 import uuid
 import pytz
 
@@ -33,7 +34,7 @@ from django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
 from student.models import CourseEnrollment
 from shoppingcart.models import Coupon, PaidCourseRegistration
 from course_modes.models import CourseMode, CourseModesArchive
-from student.roles import CourseFinanceAdminRole
+from student.roles import CourseFinanceAdminRole, CourseSalesAdminRole
 
 from class_dashboard.dashboard_data import get_section_display_name, get_array_section_has_problem
 from .tools import get_units_with_due_date, title_or_url, bulk_email_is_enabled_for_course
@@ -47,13 +48,14 @@ log = logging.getLogger(__name__)
 @cache_control(no_cache=True, no_store=True, must_revalidate=True)
 def instructor_dashboard_2(request, course_id):
     """ Display the instructor dashboard for a course. """
-    course_key = SlashSeparatedCourseKey.from_deprecated_string(course_id)
+    course_key = CourseKey.from_string(course_id)
     course = get_course_by_id(course_key, depth=None)
 
     access = {
         'admin': request.user.is_staff,
         'instructor': has_access(request.user, 'instructor', course),
         'finance_admin': CourseFinanceAdminRole(course_key).has_user(request.user),
+        'sales_admin': CourseSalesAdminRole(course_key).has_user(request.user),
         'staff': has_access(request.user, 'staff', course),
         'forum_admin': has_forum_access(
             request.user, course_key, FORUM_ROLE_ADMINISTRATOR
@@ -88,7 +90,7 @@ def instructor_dashboard_2(request, course_id):
         sections.append(_section_metrics(course, access))
 
     # Gate access to Ecommerce tab
-    if course_mode_has_price and (access['finance_admin'] or is_white_label):
+    if course_mode_has_price and (access['finance_admin'] or access['sales_admin']):
         sections.append(_section_e_commerce(course, access, is_white_label))
 
     disable_buttons = not _is_small_course(course_key)
@@ -160,7 +162,8 @@ def _section_e_commerce(course, access, is_white_label):
         'set_course_mode_url': reverse('set_course_mode_price', kwargs={'course_id': unicode(course_key)}),
         'download_coupon_codes_url': reverse('get_coupon_codes', kwargs={'course_id': unicode(course_key)}),
         'coupons': coupons,
-        'enable_coupons': is_white_label,
+        'sales_admin': access['sales_admin'],
+        'is_white_label': is_white_label,
         'course_price': course_price,
         'total_amount': total_amount
     }
