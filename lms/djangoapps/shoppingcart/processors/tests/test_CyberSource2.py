@@ -142,7 +142,7 @@ class CyberSource2Test(TestCase):
 
     def test_process_payment_rejected(self):
         # Simulate a callback from CyberSource indicating that the payment was rejected
-        params = self._signed_callback_params(self.order.id, self.COST, self.COST, accepted=False)
+        params = self._signed_callback_params(self.order.id, self.COST, self.COST, decision='REJECT')
         result = process_postpay_callback(params)
 
         # Expect that we get an error message
@@ -263,7 +263,7 @@ class CyberSource2Test(TestCase):
 
     def _signed_callback_params(
         self, order_id, order_amount, paid_amount,
-        accepted=True, signature=None, card_number='xxxxxxxxxxxx1111',
+        decision='ACCEPT', signature=None, card_number='xxxxxxxxxxxx1111',
         first_name='John'
     ):
         """
@@ -281,7 +281,7 @@ class CyberSource2Test(TestCase):
 
         Keyword Args:
 
-            accepted (bool): Whether the payment was accepted or rejected.
+            decision (string): Whether the payment was accepted or rejected or declined.
             signature (string): If provided, use this value instead of calculating the signature.
             card_numer (string): If provided, use this value instead of the default credit card number.
             first_name (string): If provided, the first name of the user.
@@ -294,7 +294,7 @@ class CyberSource2Test(TestCase):
         # These were captured from the CC test server.
         params = {
             # Parameters that change based on the test
-            "decision": "ACCEPT" if accepted else "REJECT",
+            "decision": decision,
             "req_reference_number": str(order_id),
             "req_amount": order_amount,
             "auth_amount": paid_amount,
@@ -398,3 +398,12 @@ class CyberSource2Test(TestCase):
                 in params['signed_field_names'].split(u",")
             ])
         )
+
+    def test_process_payment_declined(self):
+        # Simulate a callback from CyberSource indicating that the payment was declined
+        params = self._signed_callback_params(self.order.id, self.COST, self.COST, decision='DECLINE')
+        result = process_postpay_callback(params)
+
+        # Expect that we get an error message
+        self.assertFalse(result['success'])
+        self.assertIn(u"transaction is declined", result['error_html'])
