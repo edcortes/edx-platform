@@ -124,4 +124,3 @@ class PaymentFakeViewTest(TestCase):
         # Check that the decision is "ACCEPT"
         resp_params = PaymentFakeView.response_post_params(post_params)
         self.assertEqual(resp_params.get('decision'), 'ACCEPT')
-

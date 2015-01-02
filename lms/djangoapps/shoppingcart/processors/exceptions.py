@@ -24,4 +24,3 @@ class CCProcessorUserCancelled(CCProcessorException):
 class CCProcessorUserDeclined(CCProcessorException):
     """Transaction is declined."""
     pass
-

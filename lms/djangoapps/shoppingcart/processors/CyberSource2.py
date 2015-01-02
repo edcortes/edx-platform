@@ -142,7 +142,6 @@ def verify_signatures(params):
     if params.get('decision') == u'CANCEL':
         raise CCProcessorUserCancelled()
 
-
     #  if the user decline the transaction
     # if so, then auth_amount will not be passed back so we can't yet verify signatures
     if params.get('decision') == u'DECLINE':

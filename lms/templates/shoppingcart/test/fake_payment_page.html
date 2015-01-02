@@ -1,26 +1,23 @@
 <html>
 <head><title>Payment Form</title>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
 </head>
 <body>
 <p>Payment page</p>
 
 <form name="input" action="${callback_url}" method="post">
-    % for name, value in post_params.items():
+    % for name, value in post_params_success.items():
         <input type="hidden" name="${name}" value="${value}">
     % endfor
     <input type="submit" value="Submit">
-    <input type="button" value="Decline" id="decline">
 </form>
 
-<script>
-    $(function () {
-        $('#decline').click(function (event) {
-            $('input:hidden[name=decision]').val('DECLINE');
-            $("form").submit();
-        });
-    });
-</script>
+<form name="frm_decline" action="${callback_url}" method="post">
+    % for name, value in post_params_decline.items():
+        <input type="hidden" name="${name}" value="${value}">
+    % endfor
+    <input type="submit" value="Decline" id="decline">
+</form>
+
 
 </body>
 </html>

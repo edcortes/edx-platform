@@ -210,13 +210,25 @@ class PaymentFakeView(View):
         # Build the context dict used to render the HTML form,
         # filling in values for the hidden input fields.
         # These will be sent in the POST request to the callback URL.
+
+        post_params_success = self.response_post_params(post_params)
+
         context_dict = {
 
             # URL to send the POST request to
             "callback_url": callback_url,
 
             # POST params embedded in the HTML form
-            'post_params': self.response_post_params(post_params)
+            'post_params_success': post_params_success
         }
+
+        # Build the context dict for decline form,
+        # remove the auth_amount value from here to
+        # reproduce exact response coming from actual postback call
+
+        post_params_decline = self.response_post_params(post_params)
+        del post_params_decline["auth_amount"]
+        post_params_decline["decision"] = 'DECLINE'
+        context_dict["post_params_decline"] = post_params_decline
 
         return render_to_response('shoppingcart/test/fake_payment_page.html', context_dict)
