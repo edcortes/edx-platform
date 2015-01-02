@@ -604,21 +604,22 @@ def orphan_handler(request, course_key_string):
             raise PermissionDenied()
     if request.method == 'DELETE':
         if request.user.is_staff:
-            deleted_items = _delete_orphans(course_usage_key, request.user.id)
+            deleted_items = _delete_orphans(course_usage_key, request.user.id, commit=True)
             return JsonResponse({'deleted': deleted_items})
         else:
             raise PermissionDenied()
 
 
-def _delete_orphans(course_usage_key, user_id):
+def _delete_orphans(course_usage_key, user_id, commit=False):
     """
     Helper function to delete orphans for a given course
     """
     store = modulestore()
     items = store.get_orphans(course_usage_key)
-    for itemloc in items:
-        # need to delete all versions
-        store.delete_item(itemloc, user_id, revision=ModuleStoreEnum.RevisionOption.all)
+    if commit:
+        for itemloc in items:
+            # need to delete all versions
+            store.delete_item(itemloc, user_id, revision=ModuleStoreEnum.RevisionOption.all)
     return [unicode(item) for item in items]
 
 

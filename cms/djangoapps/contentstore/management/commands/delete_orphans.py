@@ -3,7 +3,6 @@ from django.core.management.base import BaseCommand, CommandError
 from contentstore.views.item import _delete_orphans
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys import InvalidKeyError
-from opaque_keys.edx.locations import SlashSeparatedCourseKey
 from xmodule.modulestore import ModuleStoreEnum
 
 
@@ -22,18 +21,22 @@ class Command(BaseCommand):
         try:
             course_key = CourseKey.from_string(args[0])
         except InvalidKeyError:
-            course_key = SlashSeparatedCourseKey.from_deprecated_string(args[0])
+            raise CommandError("Invalid course key. Please provide course key in format: '{org}/{course}/{run}'")
 
         commit = False
         if len(args) == 2:
             commit = args[1] == 'commit'
 
         if commit:
-            print 'Deleting orphans from the course....'
-
+            print 'Deleting orphans from the course:'
+            deleted_items = _delete_orphans(
+                course_key, ModuleStoreEnum.UserID.mgmt_command, commit
+            )
+            print "Success! Deleted the following orphans from the course:"
+            print "\n".join(deleted_items)
+        else:
+            print 'Following orphans will be deleted from the course:'
             deleted_items = _delete_orphans(
                 course_key, ModuleStoreEnum.UserID.mgmt_command
             )
-
-            print "Success! Deleted the following orphans from the course:"
             print "\n".join(deleted_items)

@@ -16,52 +16,42 @@ class TestOrphanBase(CourseTestCase):
         super(TestOrphanBase, self).setUp()
 
         # create chapters and add them to course tree
-        chapter1 = self.store.create_item(self.user.id, self.course.id, 'chapter', "Chapter1")
-        chapter1 = self.store.publish(chapter1.location, self.user.id)
+        chapter1 = self.store.create_child(self.user.id, self.course.location, 'chapter', "Chapter1")
+        self.store.publish(chapter1.location, self.user.id)
 
-        chapter2 = self.store.create_item(self.user.id, self.course.id, 'chapter', "Chapter2")
-        chapter2 = self.store.publish(chapter2.location, self.user.id)
-
-        self.course.children.append(chapter1.location)
-        self.course.children.append(chapter2.location)
-        self.store.update_item(self.course, self.user.id)
+        chapter2 = self.store.create_child(self.user.id, self.course.location, 'chapter', "Chapter2")
+        self.store.publish(chapter2.location, self.user.id)
 
         # orphan chapter
         orphan_chapter = self.store.create_item(self.user.id, self.course.id, 'chapter', "OrphanChapter")
-        orphan_chapter = self.store.publish(orphan_chapter.location, self.user.id)
+        self.store.publish(orphan_chapter.location, self.user.id)
 
         # create vertical and add it as child to chapter1
-        vertical1 = self.store.create_item(self.user.id, self.course.id, 'vertical', "Vertical1")
-        vertical1 = self.store.publish(vertical1.location, self.user.id)
-
-        chapter1.children.append(vertical1.location)
-        self.store.update_item(chapter1, self.user.id)
+        vertical1 = self.store.create_child(self.user.id, chapter1.location, 'vertical', "Vertical1")
+        self.store.publish(vertical1.location, self.user.id)
 
         # create orphan vertical
         orphan_vertical = self.store.create_item(self.user.id, self.course.id, 'vertical', "OrphanVert")
-        orphan_vertical = self.store.publish(orphan_vertical.location, self.user.id)
+        self.store.publish(orphan_vertical.location, self.user.id)
 
         # create component and add it to vertical1
-        html1 = self.store.create_item(self.user.id, self.course.id, 'html', "Html1")
-        html1 = self.store.publish(html1.location, self.user.id)
-        vertical1.children.append(html1.location)
+        html1 = self.store.create_child(self.user.id, vertical1.location, 'html', "Html1")
+        self.store.publish(html1.location, self.user.id)
 
         # create component and add it as a child to vertical1 and orphan_vertical
-        html_different_parents = self.store.create_item(self.user.id, self.course.id, 'html', "html_different_parents")
-        html_different_parents = self.store.publish(html_different_parents.location, self.user.id)
-        vertical1.children.append(html_different_parents.location)
-        self.store.update_item(vertical1, self.user.id)
+        multi_parent_html = self.store.create_child(self.user.id, vertical1.location, 'html', "multi_parent_html")
+        self.store.publish(multi_parent_html.location, self.user.id)
 
-        orphan_vertical.children.append(html_different_parents.location)
+        orphan_vertical.children.append(multi_parent_html.location)
         self.store.update_item(orphan_vertical, self.user.id)
 
         # create an orphaned html module
         orphan_html = self.store.create_item(self.user.id, self.course.id, 'html', "OrphanHtml")
-        orphan_html = self.store.publish(orphan_html.location, self.user.id)
+        self.store.publish(orphan_html.location, self.user.id)
 
-        self.store.create_item(self.user.id, self.course.id, 'static_tab', "staticuno")
-        self.store.create_item(self.user.id, self.course.id, 'about', "overview")
-        self.store.create_item(self.user.id, self.course.id, 'course_info', "updates")
+        self.store.create_child(self.user.id, self.course.location, 'static_tab', "staticuno")
+        self.store.create_child(self.user.id, self.course.location, 'about', "overview")
+        self.store.create_child(self.user.id, self.course.location, 'course_info', "updates")
 
 
 class TestOrphan(TestOrphanBase):
@@ -102,7 +92,7 @@ class TestOrphan(TestOrphanBase):
 
         # make sure that any children with one orphan parent and one non-orphan
         # parent are not deleted
-        self.store.get_item(self.course.id.make_usage_key('html', "html_different_parents"), depth=0)
+        self.store.has_item(self.course.id.make_usage_key('html', "multi_parent_html"))
 
     def test_not_permitted(self):
         """
