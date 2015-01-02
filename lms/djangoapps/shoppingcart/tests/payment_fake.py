@@ -78,7 +78,7 @@ class PaymentFakeView(View):
         """
         new_status = request.body
 
-        if new_status not in ["success", "failure"]:
+        if new_status not in ["success", "failure", "decline"]:
             return HttpResponseBadRequest()
 
         else:
@@ -109,9 +109,17 @@ class PaymentFakeView(View):
         """
         Calculate the POST params we want to send back to the client.
         """
+
+        if cls.PAYMENT_STATUS_RESPONSE == "success":
+            decision = "ACCEPT"
+        elif cls.PAYMENT_STATUS_RESPONSE == "decline":
+            decision = "DECLINE"
+        else:
+            decision = "REJECT"
+
         resp_params = {
             # Indicate whether the payment was successful
-            "decision": "ACCEPT" if cls.PAYMENT_STATUS_RESPONSE == "success" else "REJECT",
+            "decision": decision,
 
             # Reflect back parameters we were sent by the client
             "req_amount": post_params.get('amount'),

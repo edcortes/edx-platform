@@ -20,6 +20,8 @@ class CCProcessorWrongAmountException(CCProcessorException):
 class CCProcessorUserCancelled(CCProcessorException):
     pass
 
+
 class CCProcessorUserDeclined(CCProcessorException):
+    """Transaction is declined."""
     pass
 
