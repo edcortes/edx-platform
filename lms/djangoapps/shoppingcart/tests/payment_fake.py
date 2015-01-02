@@ -178,6 +178,13 @@ class PaymentFakeView(View):
             'bill_trans_ref_no', 'signed_field_names', 'signed_date_time'
         ]
 
+        # if decision is ACCEPT then pass auth_amount
+        # for other decision values remove auth_amount from signed_fields list and resp_params dict
+
+        if decision != "ACCEPT":
+            signed_fields.remove('auth_amount')
+            del resp_params["auth_amount"]
+
         # Add the list of signed fields
         resp_params['signed_field_names'] = ",".join(signed_fields)
 

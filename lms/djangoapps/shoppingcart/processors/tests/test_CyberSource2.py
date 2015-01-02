@@ -406,4 +406,4 @@ class CyberSource2Test(TestCase):
 
         # Expect that we get an error message
         self.assertFalse(result['success'])
-        self.assertIn(u"transaction is declined", result['error_html'])
+        self.assertIn(u"transaction was declined", result['error_html'])

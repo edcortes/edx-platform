@@ -528,7 +528,7 @@ def _get_processor_exception_html(exception):
     elif isinstance(exception, CCProcessorUserDeclined):
         return _format_error_html(
             _(
-                u"Sorry! Our payment processor sent us back a message saying that transaction is declined. "
+                u"Sorry! Our payment processor sent us back a message saying that transaction was declined. "
                 u"The items in your shopping cart will exist for future purchase. "
                 u"If you feel that this is in error, please contact us with payment-specific questions at {email}."
             ).format(
