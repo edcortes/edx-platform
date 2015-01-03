@@ -34,15 +34,15 @@ class AssetStoreTestData(object):
         'curr_version', 'prev_version'
     )
     all_asset_data = (
-        ('pic1.jpg', 'EKMND332DDBK', 'pix/archive', False, user_id_long, user_email, now, user_id_long, user_email, now, '14', '13'),
-        ('shout.ogg', 'KFMDONSKF39K', 'sounds', True, user_id, user_email, now, user_id, user_email, now, '1', None),
-        ('code.tgz', 'ZZB2333YBDMW', 'exercises/14', False, user_id * 2, user_email, now, user_id * 2, user_email, now, 'AB', 'AA'),
-        ('dog.png', 'PUPY4242X', 'pictures/animals', True, user_id_long * 3, user_email, now, user_id_long * 3, user_email, now, '5', '4'),
-        ('not_here.txt', 'JJJCCC747', '/dev/null', False, user_id * 4, user_email, now, user_id * 4, user_email, now, '50', '49'),
-        ('asset.txt', 'JJJCCC747858', '/dev/null', False, user_id * 4, user_email, now, user_id * 4, user_email, now, '50', '49'),
-        ('roman_history.pdf', 'JASDUNSADK', 'texts/italy', True, user_id * 7, user_email, now, user_id * 7, user_email, now, '1.1', '1.01'),
-        ('weather_patterns.bmp', '928SJXX2EB', 'science', False, user_id * 8, user_email, now, user_id * 8, user_email, now, '52', '51'),
-        ('demo.swf', 'DFDFGGGG14', 'demos/easy', False, user_id * 9, user_email, now, user_id * 9, user_email, now, '5', '4'),
+        ('pic1.jpg', 'EKMND332DDBK', 'pix/archive', False, user_id_long, user_email, now + timedelta(seconds=10 * 1), user_id_long, user_email, now, '14', '13'),
+        ('shout.ogg', 'KFMDONSKF39K', 'sounds', True, user_id, user_email, now + timedelta(seconds=10 * 2), user_id, user_email, now, '1', None),
+        ('code.tgz', 'ZZB2333YBDMW', 'exercises/14', False, user_id * 2, user_email, now + timedelta(seconds=10 * 3), user_id * 2, user_email, now, 'AB', 'AA'),
+        ('dog.png', 'PUPY4242X', 'pictures/animals', True, user_id_long * 3, user_email, now + timedelta(seconds=10 * 4), user_id_long * 3, user_email, now, '5', '4'),
+        ('not_here.txt', 'JJJCCC747', '/dev/null', False, user_id * 4, user_email, now + timedelta(seconds=10 * 5), user_id * 4, user_email, now, '50', '49'),
+        ('asset.txt', 'JJJCCC747858', '/dev/null', False, user_id * 4, user_email, now + timedelta(seconds=10 * 6), user_id * 4, user_email, now, '50', '49'),
+        ('roman_history.pdf', 'JASDUNSADK', 'texts/italy', True, user_id * 7, user_email, now + timedelta(seconds=10 * 7), user_id * 7, user_email, now, '1.1', '1.01'),
+        ('weather_patterns.bmp', '928SJXX2EB', 'science', False, user_id * 8, user_email, now + timedelta(seconds=10 * 8), user_id * 8, user_email, now, '52', '51'),
+        ('demo.swf', 'DFDFGGGG14', 'demos/easy', False, user_id * 9, user_email, now + timedelta(seconds=10 * 9), user_id * 9, user_email, now, '5', '4'),
     )
 
 
@@ -462,7 +462,6 @@ class TestMongoAssetMetadataStorage(unittest.TestCase):
         """
         Save multiple metadata in each store and retrieve it singularly, as all assets, and after deleting all.
         """
-        # Temporarily only perform this test for Old Mongo - not Split.
         with MongoContentstoreBuilder().build() as contentstore:
             with storebuilder.build(contentstore) as store:
                 course1 = CourseFactory.create(modulestore=store)
@@ -497,10 +496,13 @@ class TestMongoAssetMetadataStorage(unittest.TestCase):
                         asset_page = store.get_all_asset_metadata(
                             course2.id, 'asset', start=2 * i, maxresults=2, sort=sort_test[0]
                         )
-                        self.assertEquals(len(asset_page), sort_test[2][i])
-                        self.assertEquals(asset_page[0].asset_id.path, sort_test[1][2 * i])
-                        if sort_test[2][i] == 2:
-                            self.assertEquals(asset_page[1].asset_id.path, sort_test[1][(2 * i) + 1])
+                        num_expected_results = sort_test[2][i]
+                        expected_filename = sort_test[1][2 * i]
+                        self.assertEquals(len(asset_page), num_expected_results)
+                        self.assertEquals(asset_page[0].asset_id.path, expected_filename)
+                        if num_expected_results == 2:
+                            expected_filename = sort_test[1][(2 * i) + 1]
+                            self.assertEquals(asset_page[1].asset_id.path, expected_filename)
 
                 # Now fetch everything.
                 asset_page = store.get_all_asset_metadata(

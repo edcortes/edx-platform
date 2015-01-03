@@ -60,6 +60,8 @@ from mongodb_proxy import autoretry_read
 from path import path
 from pytz import UTC
 from bson.objectid import ObjectId
+from operator import itemgetter
+from sortedcontainers import SortedListWithKey
 
 from xblock.core import XBlock
 from xblock.fields import Scope, Reference, ReferenceList, ReferenceValueDict
@@ -2231,27 +2233,6 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         """
         return self._lookup_course(course_key).structure.get('assets', {})
 
-    def _find_course_asset(self, asset_key):
-        """
-        Return the raw dict of assets type as well as the index to the one being sought from w/in
-        it's subvalue (or None)
-        """
-        assets = self._lookup_course(asset_key.course_key).structure.get('assets', {})
-        return assets, self._lookup_course_asset(assets, asset_key)
-
-    def _lookup_course_asset(self, structure, asset_key):
-        """
-        Find the course asset in the structure or return None if it does not exist
-        """
-        # See if this asset already exists by checking the external_filename.
-        # Studio doesn't currently support using multiple course assets with the same filename.
-        # So use the filename as the unique identifier.
-        accessor = asset_key.block_type
-        for idx, asset in enumerate(structure.setdefault(accessor, [])):
-            if asset['filename'] == asset_key.path:
-                return idx
-        return None
-
     def _update_course_assets(self, user_id, asset_key, update_function):
         """
         A wrapper for functions wanting to manipulate assets. Gets and versions the structure,
@@ -2266,11 +2247,16 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
             index_entry = self._get_index_if_valid(asset_key.course_key)
             new_structure = self.version_structure(asset_key.course_key, original_structure, user_id)
 
-            asset_idx = self._lookup_course_asset(new_structure.setdefault('assets', {}), asset_key)
+            course_assets = new_structure.setdefault('assets', {})
+            asset_type = asset_key.asset_type
+            all_assets = SortedListWithKey([], key=itemgetter('filename'))
+            # Assets should be pre-sorted, so add them efficiently without sorting.
+            # extend() will raise a ValueError if the passed-in list is not sorted.
+            all_assets.extend(course_assets.setdefault(asset_type, []))
+            asset_idx = self._find_asset_in_list(all_assets, asset_key)
 
-            new_structure['assets'][asset_key.block_type] = update_function(
-                new_structure['assets'][asset_key.block_type], asset_idx
-            )
+            all_assets_updated = update_function(all_assets, asset_idx)
+            new_structure['assets'][asset_type] = all_assets_updated.as_list()
 
             # update index if appropriate and structures
             self.update_structure(asset_key.course_key, new_structure)
@@ -2295,20 +2281,28 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
             original_structure = self._lookup_course(course_key).structure
             index_entry = self._get_index_if_valid(course_key)
             new_structure = self.version_structure(course_key, original_structure, user_id)
+            course_assets = new_structure.setdefault('assets', {})
 
             # Add all asset metadata to the structure at once.
+            changed_asset_types = set()
+            assets_by_type = {}
             for asset_metadata in asset_metadata_list:
+                asset_type = asset_metadata.asset_id.asset_type
+                changed_asset_types.add(asset_type)
+                # Lazily create a sorted list if not already created.
+                if asset_type not in assets_by_type:
+                    assets_by_type[asset_type] = SortedListWithKey(course_assets.get(asset_type, []), key=itemgetter('filename'))
+                all_assets = assets_by_type[asset_type]
+                asset_idx = self._find_asset_in_list(all_assets, asset_metadata.asset_id)
+
                 metadata_to_insert = asset_metadata.to_storable()
-                asset_md_key = asset_metadata.asset_id
-
-                asset_idx = self._lookup_course_asset(new_structure.setdefault('assets', {}), asset_md_key)
-
-                all_assets = new_structure['assets'][asset_md_key.asset_type]
                 if asset_idx is None:
-                    all_assets.append(metadata_to_insert)
+                    all_assets.add(metadata_to_insert)
                 else:
                     all_assets[asset_idx] = metadata_to_insert
-                new_structure['assets'][asset_md_key.asset_type] = all_assets
+
+            for asset_type in changed_asset_types:
+                new_structure['assets'][asset_type] = assets_by_type[asset_type].as_list()
 
             # update index if appropriate and structures
             self.update_structure(course_key, new_structure)
@@ -2321,19 +2315,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         """
         The guts of saving a new or updated asset
         """
-        metadata_to_insert = asset_metadata.to_storable()
-
-        def _internal_method(all_assets, asset_idx):
-            """
-            Either replace the existing entry or add a new one
-            """
-            if asset_idx is None:
-                all_assets.append(metadata_to_insert)
-            else:
-                all_assets[asset_idx] = metadata_to_insert
-            return all_assets
-
-        return self._update_course_assets(user_id, asset_metadata.asset_id, _internal_method)
+        return self.save_asset_metadata_list([asset_metadata, ], user_id, import_only)
 
     @contract(asset_key='AssetKey', attr_dict=dict)
     def set_asset_metadata_attrs(self, asset_key, attr_dict, user_id):
